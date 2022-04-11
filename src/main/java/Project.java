@@ -13,7 +13,7 @@ import java.util.Objects;
 
 public class Project {
     //object stuff
-    private final String name;
+    private String name = null;
     private String description = "";
     private boolean hasCategory;
     private boolean isPrivate;

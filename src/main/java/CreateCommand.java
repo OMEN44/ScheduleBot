@@ -54,7 +54,6 @@ public class CreateCommand extends ListenerAdapter {
                             return;
                         }
                         if (args[1].equalsIgnoreCase("new") ||
-                                args[1].equalsIgnoreCase("delete") ||
                                 args[1].equalsIgnoreCase("help") ||
                                 args[1].equalsIgnoreCase("list")) {
                             Utils.errorEmbed(event.getMessage(), "Illegal project name used!");
