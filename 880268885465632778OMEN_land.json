@@ -1,30 +1,22 @@
 [
   {
-    "name": "pep",
+    "name": "h",
+    "description": "",
+    "hasCategory": false,
+    "isPrivate": false,
+    "owner": 577382380763873280,
+    "role": 0,
+    "users": [
+      961398561910689843
+    ],
+    "tasks": []
+  },
+  {
+    "name": "p",
     "description": "",
     "hasCategory": false,
     "isPrivate": false,
     "owner": 961398561910689843,
-    "role": 0,
-    "users": [],
-    "tasks": []
-  },
-  {
-    "name": "monkey",
-    "description": "",
-    "hasCategory": false,
-    "isPrivate": false,
-    "owner": 574766527098912769,
-    "role": 0,
-    "users": [],
-    "tasks": []
-  },
-  {
-    "name": "boot",
-    "description": "",
-    "hasCategory": false,
-    "isPrivate": true,
-    "owner": 577382380763873280,
     "role": 0,
     "users": [],
     "tasks": []

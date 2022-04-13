@@ -48,5 +48,18 @@
     "role": 0,
     "users": [],
     "tasks": []
+  },
+  {
+    "name": "balls",
+    "description": "i like metal",
+    "hasCategory": false,
+    "isPrivate": false,
+    "owner": 123123123123,
+    "role": 0,
+    "users": [
+      577382380763873280,
+      591018603726372875
+    ],
+    "tasks": []
   }
 ]

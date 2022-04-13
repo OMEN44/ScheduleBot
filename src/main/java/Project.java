@@ -20,7 +20,7 @@ public class Project {
     //discord stuff
     private long owner;
     private long role;
-    private List<User> users = new ArrayList<>();
+    private List<Long> users = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
 
     public Project(String name) {
@@ -61,7 +61,7 @@ public class Project {
         return role;
     }
 
-    public List<User> getUsers() {
+    public List<Long> getUsers() {
         return users;
     }
 
@@ -89,12 +89,12 @@ public class Project {
         this.role = role;
     }
 
-    public void setUsers(List<User> users) {
+    public void setUsers(List<Long> users) {
         this.users = users;
     }
 
-    public void addUser(User user) {
-        this.users.add(user);
+    public void addUser(Long... users) {
+        this.users.addAll(Arrays.asList(users));
     }
 
     public void setTasks(Task... tasks) {
