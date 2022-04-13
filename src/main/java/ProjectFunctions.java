@@ -20,16 +20,14 @@ import java.util.Objects;
 
 public class ProjectFunctions {
 
-    private final User sender;
     private final Utils utils;
     private final String fileName;
     private final Message message;
     private final ProjectCommand pc;
     private Project project;
 
-    public ProjectFunctions(User sender, Project project, Utils utils, String fileName,
+    public ProjectFunctions(Project project, Utils utils, String fileName,
                             Message message, ProjectCommand projectCommand) {
-        this.sender = sender;
         this.project = project;
         this.utils = utils;
         this.fileName = fileName;

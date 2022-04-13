@@ -72,7 +72,6 @@ public class ProjectCommand extends ListenerAdapter {
                     return;
                 //the project has been found and exists!
                 ProjectFunctions pf = new ProjectFunctions(
-                        event.getAuthor(),
                         project,
                         this.utils,
                         fileName,
