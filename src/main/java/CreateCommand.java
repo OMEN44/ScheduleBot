@@ -3,7 +3,6 @@ import com.google.gson.GsonBuilder;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.requests.RestAction;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -14,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Objects;
 
 public class CreateCommand extends ListenerAdapter {
 
@@ -30,14 +28,11 @@ public class CreateCommand extends ListenerAdapter {
             String message = event.getMessage().getContentRaw();
             boolean hasPrefix = message.startsWith("*");
             String[] args = message.split(" ");
-            String fileName = event.getGuild().getId() +
-                    event.getGuild().getName().replace(" ", "_") +
-                    ".json";
-            List<Project> projects = Project.getProjects(fileName);
+            List<Project> projects = Project.getProjects("projects.json");
 
             //check if file is created
-            if (!Files.exists(Path.of(fileName))) {
-                File file = new File(fileName);
+            if (!Files.exists(Path.of("projects.json"))) {
+                File file = new File("projects.json");
                 if (!file.createNewFile()) {
                     Utils.errorEmbed(event.getMessage(),
                             "Unable to make file please contact server admin immediately!");
@@ -60,7 +55,7 @@ public class CreateCommand extends ListenerAdapter {
                             return;
                         }
                         try {
-                            if (Project.projectExist(args[1], fileName)) {
+                            if (Project.projectExist(args[1], "projects.json")) {
                                 Utils.errorEmbed(event.getMessage(),
                                         "A project with this name already exists!\n" +
                                                 "Think of a new name and try again.");
@@ -71,7 +66,7 @@ public class CreateCommand extends ListenerAdapter {
                             Project project = new Project(args[1], event.getAuthor().getIdLong());
                             projects.add(project);
 
-                            Writer newWriter = Files.newBufferedWriter(Paths.get(fileName));
+                            Writer newWriter = Files.newBufferedWriter(Paths.get("projects.json"));
                             gson.toJson(projects, newWriter);
                             newWriter.close();
                         } catch (NullPointerException | IOException e) {

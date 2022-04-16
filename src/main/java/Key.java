@@ -1,5 +1,6 @@
 import java.util.Objects;
 
+@SuppressWarnings("unused")
 public class Key {
 
     private final String embedTitle;
@@ -29,8 +30,7 @@ public class Key {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Key)) return false;
-        Key key = (Key) o;
+        if (!(o instanceof Key key)) return false;
         return Objects.equals(embedTitle, key.embedTitle) && Objects.equals(userID, key.userID);
     }
 

@@ -1,9 +1,10 @@
 import java.util.Arrays;
 import java.util.List;
 
+@SuppressWarnings("unused")
 public class Task {
     private String name;
-    private String description;
+    private String description = null;
     //progress is updated by users and is an int out of 100
     private int progress;
     private List<Long> assignedUsers;

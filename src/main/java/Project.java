@@ -1,6 +1,5 @@
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import net.dv8tion.jda.api.entities.User;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -11,9 +10,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+@SuppressWarnings("unused")
 public class Project {
-    //object stuff
-    private String name = null;
+    //project stuff
+    private final String name;
     private String description = "";
     private boolean hasCategory;
     private boolean isPrivate;

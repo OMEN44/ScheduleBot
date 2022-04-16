@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
-import java.awt.Color;
+import java.awt.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -40,8 +40,7 @@ public class ProjectCommand extends ListenerAdapter {
         try {
             String message = event.getMessage().getContentRaw();
             String[] args = message.split(" ");
-            String fileName = event.getGuild().getId() + event.getGuild().getName().replace(" ", "_") + ".json";
-            List<Project> projects = Project.getProjects(fileName);
+            List<Project> projects = Project.getProjects("projects.json");
             Project project = null;
 
             if (this.editingOwner.get(event.getAuthor().getIdLong()) != null) {
@@ -60,7 +59,7 @@ public class ProjectCommand extends ListenerAdapter {
                 } else {
                     p.setDescription(event.getMessage().getContentRaw());
                 }
-                ProjectFunctions.updateProjects(p, fileName);
+                ProjectFunctions.updateProjects(p);
                 this.editingOwner.remove(event.getAuthor().getIdLong());
                 Utils.successEmbed(event.getMessage(), "Project details have been updated");
             }
@@ -71,12 +70,26 @@ public class ProjectCommand extends ListenerAdapter {
                 if ((boolean) this.makingTask.get(event.getAuthor().getIdLong())[0]) {
                     t.setName(message);
                 } else {
+                    if (message.length() > 100) {
+                        Utils.errorEmbed(
+                                event.getMessage(),
+                                "Description cannot be longer then 100 characters!"
+                        );
+                        this.makingTask.remove(event.getAuthor().getIdLong());
+                        return;
+                    }
                     t.setDescription(message);
                 }
 
                 p.setTask(t);
                 this.makingTask.remove(event.getAuthor().getIdLong());
                 Utils.successEmbed(event.getMessage(), "Task details have been updated. Press save to finish.");
+            }
+
+            if (event.getMessage().getMentionedUsers().size() == 1 && !event.getAuthor().isBot()) {
+                if (event.getMessage().getMentionedUsers().get(0).getIdLong() == 960287864430682112L) {
+                    event.getMessage().reply("hello").queue();
+                }
             }
 
             if (Objects.equals(args[0], "*new") || Objects.equals(args[0], "*list")) return;
@@ -95,7 +108,6 @@ public class ProjectCommand extends ListenerAdapter {
                 ProjectFunctions pf = new ProjectFunctions(
                         project,
                         this.utils,
-                        fileName,
                         event.getMessage(),
                         this
                 );
@@ -169,40 +181,16 @@ public class ProjectCommand extends ListenerAdapter {
                     event.getUser().getIdLong()
             );
             ProjectFunctions pf = this.hashMap.get(key);
-            //event.editMessage(event.getInteraction().getSelectedOptions().get(0).getLabel()).queue();
             boolean exists = false;
-            Task task = null;
             for (Task t : pf.getProject().getTasks()) {
                 if (t.getName().equals(event.getInteraction().getSelectedOptions().get(0).getLabel())) {
                     exists = true;
-                    task = t;
+                    pf.setTask(t);
                     break;
                 }
             }
             if (!exists) return;
-
-            int progress = Math.round(task.getProgress()/10f);
-
-            event.editMessageEmbeds(
-                    new EmbedBuilder().setFooter("card id: " + pf.getMessage().getIdLong())
-                            .setTitle("Task: " + task.getName())
-                            .addField("description", task.getDescription(), false)
-                            .addField(
-                                    "Progress: ",
-                                    ":green_square:".repeat(progress) + ":red_square:".repeat(10 - progress),
-                                    false
-                            )
-                            .setColor(Color.BLUE).build()
-            ).setActionRows(
-                    ActionRow.of(
-                            Button.success("progress", " "),
-                            Button.danger("regress", " "),
-                            Button.primary("editTask", "Edit"),
-                            Button.danger("deleteTask", "delete")
-                    ),
-                    event.getMessage().getActionRows().get(0),
-                    event.getMessage().getActionRows().get(1)
-            ).queue();
+            pf.sendTaskEmbed(event, pf.getTask());
 
         } catch (NullPointerException e) {
             event.reply("Sorry, that ones not yours!").setEphemeral(true).queue();

@@ -1,17 +1,16 @@
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Emoji;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.GenericComponentInteractionCreateEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.selections.SelectMenu;
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.*;
+import java.awt.Color;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -22,29 +21,38 @@ import java.util.Objects;
 public class ProjectFunctions {
 
     private final Utils utils;
-    private final String fileName;
     private final Message message;
     private final ProjectCommand pc;
     private Project project;
     private Task task;
 
-    public ProjectFunctions(Project project, Utils utils, String fileName,
-                            Message message, ProjectCommand projectCommand) {
+    public ProjectFunctions(Project project, Utils utils, Message message, ProjectCommand projectCommand) {
         this.project = project;
         this.utils = utils;
-        this.fileName = fileName;
         this.message = message;
         this.pc = projectCommand;
     }
 
-    public static void updateProjects(Project project, String fileName) {
+    public Project getProject() {
+        return project;
+    }
+
+    public void setTask(Task task) {
+        this.task = task;
+    }
+
+    public Task getTask() {
+        return task;
+    }
+
+    public static void updateProjects(Project project) {
         try {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            List<Project> projects = Project.getProjects(fileName);
+            List<Project> projects = Project.getProjects("projects.json");
             projects.removeIf(proj -> Objects.equals(proj.getName(), project.getName()));
             projects.add(project);
 
-            Writer newWriter = Files.newBufferedWriter(Paths.get(fileName));
+            Writer newWriter = Files.newBufferedWriter(Paths.get("projects.json"));
             gson.toJson(projects, newWriter);
             newWriter.close();
         } catch (NullPointerException | IOException e) {
@@ -52,16 +60,22 @@ public class ProjectFunctions {
         }
     }
 
-    public Project getProject() {
-        return project;
-    }
+    public static void updateProjects(Project project, Task task) {
+        try {
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            List<Project> projects = Project.getProjects("projects.json");
+            projects.removeIf(proj -> Objects.equals(proj.getName(), project.getName()));
+            List<Task> tasks = project.getTasks();
+            tasks.removeIf(t -> Objects.equals(t.getName(), task.getName()));
+            project.addTask(task);
+            projects.add(project);
 
-    public Message getMessage() {
-        return message;
-    }
-
-    public void setTask(Task task) {
-        this.task = task;
+            Writer newWriter = Files.newBufferedWriter(Paths.get("projects.json"));
+            gson.toJson(projects, newWriter);
+            newWriter.close();
+        } catch (NullPointerException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void showTasks(ButtonInteractionEvent event) {
@@ -72,20 +86,24 @@ public class ProjectFunctions {
                                     "No tasks were found!", false).setColor(Color.RED).build())
                     .setActionRow(
                             Button.primary("showProject", "View project"),
-                            Button.primary("newTask", "Create task").withEmoji(Emoji.fromMarkdown("<:new:245267426227388416>"))
+                            Button.primary("newTask", "Create task")
                     ).queue();
         else {
+            Button create = Button.primary("newTask", "Create task").asDisabled();
+            if (this.project.getUsers().contains(event.getUser().getIdLong()) ||
+                    this.project.getOwner() == event.getUser().getIdLong())
+                create = Button.primary("newTask", "Create task");
             SelectMenu.Builder menu = SelectMenu.create("taskSelector").setPlaceholder("task").setRequiredRange(1, 1);
             for (Task t : this.project.getTasks())
                 menu.addOption(t.getName(), t.getName(), t.getDescription());
             event.editMessageEmbeds(
                     new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
-                            .addField("Select a task to view:", "select one task to view", false)
+                            .addField("Tasks:", "select one task to view", false)
                             .setColor(Color.BLUE)
                             .build()
             ).setActionRows(ActionRow.of(menu.build()), ActionRow.of(
                     Button.primary("showProject", "View project"),
-                    Button.primary("newTask", "Create task")
+                    create
             )).queue();
         }
     }
@@ -107,10 +125,10 @@ public class ProjectFunctions {
     public void deleteProject(@NotNull ButtonInteractionEvent event) {
         try {
             if (event.getUser().getIdLong() == project.getOwner()) {
-                List<Project> projects = Project.getProjects(fileName);
+                List<Project> projects = Project.getProjects("projects.json");
                 projects.removeIf(proj -> Objects.equals(proj.getName(), this.project.getName()));
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                Writer newWriter = Files.newBufferedWriter(Paths.get(fileName));
+                Writer newWriter = Files.newBufferedWriter(Paths.get("projects.json"));
                 gson.toJson(projects, newWriter);
                 newWriter.close();
                 event.editMessageEmbeds(
@@ -150,7 +168,7 @@ public class ProjectFunctions {
         if (this.project.getUsers().contains(event.getUser().getIdLong()) ||
                 this.project.isPrivate() || this.project.getOwner() == event.getUser().getIdLong())
             join = join.asDisabled();
-        event.editMessageEmbeds(createProjectEmbed(event.getGuild()).build())
+        event.editMessageEmbeds(createProjectEmbed().build())
                 .setActionRow(tasks, edit, join, delete).queue();
     }
 
@@ -174,11 +192,11 @@ public class ProjectFunctions {
             join = leave;
         if (this.project.isPrivate() || this.project.getOwner() == event.getAuthor().getIdLong())
             join = join.asDisabled();
-        event.getMessage().replyEmbeds(createProjectEmbed(event.getGuild()).build())
+        event.getMessage().replyEmbeds(createProjectEmbed().build())
                 .setActionRow(tasks, edit, join, delete).queue();
     }
 
-    public EmbedBuilder createProjectEmbed(Guild guild) {
+    public EmbedBuilder createProjectEmbed() {
         EmbedBuilder eb = new EmbedBuilder()
                 .setTitle("Project: " + this.project.getName())
                 .setFooter("card id: " + this.message.getIdLong())
@@ -198,10 +216,6 @@ public class ProjectFunctions {
             eb.addField("Number of tasks:", String.valueOf(this.project.getTasks().size()), true);
         if (!this.project.getUsers().isEmpty()) {
             StringBuilder users = new StringBuilder();
-            /*for (Member m : guild.retrieveMembersByIds(this.project.getUsers()).onSuccess()) {
-                System.out.println(m.getEffectiveName());
-                users.append(m.getEffectiveName()).append("\n");
-            }*/
             for (Long l : this.project.getUsers()) {
                 users.append("<@").append(l).append("> \n");
             }
@@ -220,7 +234,7 @@ public class ProjectFunctions {
         }
         if (!this.project.isPrivate()) {
             this.project.addUser(event.getUser().getIdLong());
-            updateProjects(this.project, this.fileName);
+            updateProjects(this.project);
             sendProjectEmbed(event, false);
             event.editButton(Button.primary("leave", "Leave project")).queue();
         } else {
@@ -248,7 +262,7 @@ public class ProjectFunctions {
         users.remove(event.getUser().getIdLong());
         this.project.setUsers(users);
 
-        updateProjects(this.project, this.fileName);
+        updateProjects(this.project);
         sendProjectEmbed(event, false);
         event.editButton(Button.primary("join", "Join project")).queue();
     }
@@ -312,13 +326,13 @@ public class ProjectFunctions {
 
     public void privateYes(ButtonInteractionEvent event) {
         this.project.setPrivate(true);
-        updateProjects(this.project, this.fileName);
+        updateProjects(this.project);
         sendProjectEmbed(event, false);
     }
 
     public void privateNo(ButtonInteractionEvent event) {
         this.project.setPrivate(false);
-        updateProjects(this.project, this.fileName);
+        updateProjects(this.project);
         sendProjectEmbed(event, false);
     }
 
@@ -375,7 +389,7 @@ public class ProjectFunctions {
     public void save(ButtonInteractionEvent event) {
         try {
             String name = this.task.getName();
-            ProjectFunctions.updateProjects(this.project.addTask(this.task), fileName);
+            ProjectFunctions.updateProjects(this.project.addTask(this.task));
             event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
                     .addField(
                             "Success",
@@ -398,11 +412,47 @@ public class ProjectFunctions {
     }
 
     public void progress(ButtonInteractionEvent event) {
-
-        //event.getMessage().getEmbeds().get(0).getFields().get(1).get
+        this.task.setProgress(this.task.getProgress() + 10);
+        updateProjects(this.project, this.task);
+        sendTaskEmbed(event, this.task);
     }
 
     public void regress(ButtonInteractionEvent event) {
+        this.task.setProgress(this.task.getProgress() - 10);
+        updateProjects(this.project, this.task);
+        sendTaskEmbed(event, this.task);
     }
 
+    public void sendTaskEmbed(GenericComponentInteractionCreateEvent event, Task task) {
+        int progress = Math.round(task.getProgress() / 10f);
+        EmbedBuilder eb = new EmbedBuilder()
+                .setFooter("card id: " + this.message.getIdLong())
+                .setTitle("Task: " + task.getName())
+                .setColor(Color.BLUE)
+                .addField(
+                        "Progress: ",
+                        ":green_square:".repeat(progress) + ":red_square:".repeat(10 - progress),
+                        false
+                );
+        if (task.getDescription() != null)
+            eb.addField("description", task.getDescription(), false);
+        Button up = Button.success("progress", "+1");
+        Button down = Button.danger("regress", "-1");
+        if (task.getProgress() == 0)
+            down = down.asDisabled();
+        if (task.getProgress() == 100)
+            up = up.asDisabled();
+        ActionRow ar = ActionRow.of(up, down, Button.primary("editTask", "Edit"),
+                Button.danger("deleteTask", "Delete"));
+        if (this.project.getUsers().contains(event.getUser().getIdLong()) ||
+                this.project.getOwner() == event.getUser().getIdLong())
+            event.editMessageEmbeds(eb.build()).setActionRows(
+                    ar,
+                    ActionRow.of(Button.primary("tasks", "View tasks"))
+            ).queue();
+        else
+            event.editMessageEmbeds(eb.build()).setActionRow(
+                    Button.primary("tasks", "View tasks")
+            ).queue();
+    }
 }

@@ -1,6 +1,4 @@
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -8,9 +6,7 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 
 import javax.annotation.Nonnull;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 public class Utils extends ListenerAdapter {
@@ -79,16 +75,5 @@ public class Utils extends ListenerAdapter {
                 event.editButton(Button.secondary("prntStack", "Print in terminal").asDisabled()).queue();
             }
         }
-    }
-
-    public static List<String> getNames(Guild guild, List<Long> idList) {
-        guild.loadMembers();
-        List<String> names = new ArrayList<>();
-        for (Member member : guild.getMembers()) {
-            System.out.println(member.getEffectiveName());
-            if (idList.contains(member.getIdLong()))
-                names.add(member.getEffectiveName());
-        }
-        return names;
     }
 }

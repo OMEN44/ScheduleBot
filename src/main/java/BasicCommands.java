@@ -8,7 +8,7 @@ public class BasicCommands extends ListenerAdapter {
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         if (event.getAuthor().isBot()) return;
-        if (event.getMessage().getContentRaw().equalsIgnoreCase("\"ping"))
+        if (event.getMessage().getContentRaw().equalsIgnoreCase("*ping"))
             event.getMessage().reply("Ping: very fast :smirk:").queue(message -> {
                 long ping = event.getMessage().getTimeCreated().until(message.getTimeCreated(), ChronoUnit.MILLIS);
                 message.editMessage("ping: " + ping).queue();
