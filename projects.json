@@ -1,0 +1,23 @@
+[
+  {
+    "name": "project_bot",
+    "description": "",
+    "hasCategory": false,
+    "isPrivate": false,
+    "owner": 961398561910689843,
+    "role": 0,
+    "users": [],
+    "tasks": [
+      {
+        "name": "new home embed",
+        "description": "When the bot is mentioned it will send an embed that gives users create and list options",
+        "progress": 0
+      },
+      {
+        "name": "bug with descriptions",
+        "description": "anaosdnoansd",
+        "progress": 100
+      }
+    ]
+  }
+]
