@@ -148,4 +148,9 @@ public class Project {
         }
         return target;
     }
+
+    public Project addTask(Task t) {
+        this.tasks.add(t);
+        return this;
+    }
 }

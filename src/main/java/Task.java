@@ -2,11 +2,15 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Task {
-    private final String name;
+    private String name;
     private String description;
     //progress is updated by users and is an int out of 100
     private int progress;
     private List<Long> assignedUsers;
+
+    public Task() {
+        this.name = null;
+    }
 
     public Task(String name) {
         this.name = name;
@@ -16,6 +20,10 @@ public class Task {
         this(name);
         this.description = description;
         this.assignedUsers = Arrays.stream(users).toList();
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getName() {

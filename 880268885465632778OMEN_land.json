@@ -1,5 +1,15 @@
 [
   {
+    "name": "p",
+    "description": "",
+    "hasCategory": false,
+    "isPrivate": false,
+    "owner": 961398561910689843,
+    "role": 0,
+    "users": [],
+    "tasks": []
+  },
+  {
     "name": "h",
     "description": "",
     "hasCategory": false,
@@ -9,16 +19,41 @@
     "users": [
       961398561910689843
     ],
-    "tasks": []
+    "tasks": [
+      {
+        "name": "Finish cake",
+        "progress": 0
+      }
+    ]
   },
   {
-    "name": "p",
-    "description": "",
+    "name": "homework",
+    "description": "Huon\u0027s homework needs to be done",
     "hasCategory": false,
-    "isPrivate": false,
-    "owner": 961398561910689843,
+    "isPrivate": true,
+    "owner": 577382380763873280,
     "role": 0,
     "users": [],
-    "tasks": []
+    "tasks": [
+      {
+        "name": "math",
+        "description": "Hello I am math numbers and stuff",
+        "progress": 0
+      },
+      {
+        "name": "sport",
+        "description": "shoot ball hoop",
+        "progress": 0
+      },
+      {
+        "name": "lunch",
+        "description": "do what u want!!!",
+        "progress": 0
+      },
+      {
+        "name": "Art",
+        "progress": 0
+      }
+    ]
   }
 ]

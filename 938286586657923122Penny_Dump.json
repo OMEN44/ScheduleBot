@@ -48,5 +48,35 @@
     "role": 0,
     "users": [],
     "tasks": []
+  },
+  {
+    "name": "homework",
+    "description": "Huon\u0027s homework needs to be done",
+    "hasCategory": false,
+    "isPrivate": true,
+    "owner": 577382380763873280,
+    "role": 0,
+    "users": [],
+    "tasks": [
+      {
+        "name": "math",
+        "description": "Hello I am math numbers and stuff",
+        "progress": 0
+      },
+      {
+        "name": "sport",
+        "description": "shoot ball hoop",
+        "progress": 0
+      },
+      {
+        "name": "lunch",
+        "description": "do what u want!!!",
+        "progress": 0
+      },
+      {
+        "name": "book",
+        "progress": 0
+      }
+    ]
   }
 ]

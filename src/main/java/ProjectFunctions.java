@@ -4,10 +4,11 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Emoji;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.selections.SelectMenu;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -25,6 +26,7 @@ public class ProjectFunctions {
     private final Message message;
     private final ProjectCommand pc;
     private Project project;
+    private Task task;
 
     public ProjectFunctions(Project project, Utils utils, String fileName,
                             Message message, ProjectCommand projectCommand) {
@@ -35,16 +37,57 @@ public class ProjectFunctions {
         this.pc = projectCommand;
     }
 
+    public static void updateProjects(Project project, String fileName) {
+        try {
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            List<Project> projects = Project.getProjects(fileName);
+            projects.removeIf(proj -> Objects.equals(proj.getName(), project.getName()));
+            projects.add(project);
+
+            Writer newWriter = Files.newBufferedWriter(Paths.get(fileName));
+            gson.toJson(projects, newWriter);
+            newWriter.close();
+        } catch (NullPointerException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public Project getProject() {
+        return project;
+    }
+
+    public Message getMessage() {
+        return message;
+    }
+
+    public void setTask(Task task) {
+        this.task = task;
+    }
+
     public void showTasks(ButtonInteractionEvent event) {
         List<Task> tasks = this.project.getTasks();
         if (tasks.isEmpty())
             event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
                             .addField("Oh no!",
-                                    "No tasks were found!", false).build())
+                                    "No tasks were found!", false).setColor(Color.RED).build())
                     .setActionRow(
                             Button.primary("showProject", "View project"),
                             Button.primary("newTask", "Create task").withEmoji(Emoji.fromMarkdown("<:new:245267426227388416>"))
                     ).queue();
+        else {
+            SelectMenu.Builder menu = SelectMenu.create("taskSelector").setPlaceholder("task").setRequiredRange(1, 1);
+            for (Task t : this.project.getTasks())
+                menu.addOption(t.getName(), t.getName(), t.getDescription());
+            event.editMessageEmbeds(
+                    new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                            .addField("Select a task to view:", "select one task to view", false)
+                            .setColor(Color.BLUE)
+                            .build()
+            ).setActionRows(ActionRow.of(menu.build()), ActionRow.of(
+                    Button.primary("showProject", "View project"),
+                    Button.primary("newTask", "Create task")
+            )).queue();
+        }
     }
 
     public void confirmDelete(@NotNull ButtonInteractionEvent event) {
@@ -54,7 +97,7 @@ public class ProjectFunctions {
                             "Delete " + project.getName(),
                             "Are you sure you want to delete this project",
                             false
-                    ).build()).setActionRow(
+                    ).setColor(Color.BLUE).build()).setActionRow(
                     Button.success("delYes", "Yes"),
                     Button.danger("showProject", "No")
             ).queue();
@@ -136,7 +179,6 @@ public class ProjectFunctions {
     }
 
     public EmbedBuilder createProjectEmbed(Guild guild) {
-        //guild.retrieveMembersByIds()
         EmbedBuilder eb = new EmbedBuilder()
                 .setTitle("Project: " + this.project.getName())
                 .setFooter("card id: " + this.message.getIdLong())
@@ -156,32 +198,16 @@ public class ProjectFunctions {
             eb.addField("Number of tasks:", String.valueOf(this.project.getTasks().size()), true);
         if (!this.project.getUsers().isEmpty()) {
             StringBuilder users = new StringBuilder();
+            /*for (Member m : guild.retrieveMembersByIds(this.project.getUsers()).onSuccess()) {
+                System.out.println(m.getEffectiveName());
+                users.append(m.getEffectiveName()).append("\n");
+            }*/
             for (Long l : this.project.getUsers()) {
-                //System.out.println(l + guild.getMemberById(l).getEffectiveName());
-                try {
-                    users.append("<@").append(l).append("> \n");
-                } catch (NullPointerException e) {
-                    users.append("`missing` \n");
-                }
+                users.append("<@").append(l).append("> \n");
             }
             eb.addField("Users", users.toString(), true);
         }
         return eb;
-    }
-
-    public static void updateProjects(Project project, String fileName) {
-        try {
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            List<Project> projects = Project.getProjects(fileName);
-            projects.removeIf(proj -> Objects.equals(proj.getName(), project.getName()));
-            projects.add(project);
-
-            Writer newWriter = Files.newBufferedWriter(Paths.get(fileName));
-            gson.toJson(projects, newWriter);
-            newWriter.close();
-        } catch (NullPointerException | IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public void joinProject(ButtonInteractionEvent event) {
@@ -232,6 +258,7 @@ public class ProjectFunctions {
             event.editMessageEmbeds(
                     new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
                             .addField("Project editor", "Select an aspect to edit below.", false)
+                            .setColor(Color.BLUE)
                             .build()
             ).setActionRow(
                     Button.primary("editDescription", "Description"),
@@ -244,11 +271,11 @@ public class ProjectFunctions {
 
     public void editDescription(@NotNull ButtonInteractionEvent event) {
         event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
-                .addField(
-                        "Waiting...",
-                        "The next message you send will become this projects description",
-                        false
-                ).build())
+                        .addField(
+                                "Waiting...",
+                                "The next message you send will become this projects description",
+                                false
+                        ).setColor(Color.BLUE).build())
                 .setActionRow(
                         Button.danger("cancelEdit", "Cancel")
                 ).queue();
@@ -257,11 +284,11 @@ public class ProjectFunctions {
 
     public void editOwner(@NotNull ButtonInteractionEvent event) {
         event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
-                .addField(
-                        "Waiting...",
-                        "The next person you ping will become this projects owner",
-                        false
-                ).build())
+                        .addField(
+                                "Waiting...",
+                                "The next person you ping will become this projects owner",
+                                false
+                        ).setColor(Color.BLUE).build())
                 .setActionRow(
                         Button.danger("cancelEdit", "Cancel")
                 ).queue();
@@ -276,7 +303,7 @@ public class ProjectFunctions {
                                 "Make project private?",
                                 "This means that people cant join your project but can still view it.",
                                 false
-                        ).build()
+                        ).setColor(Color.BLUE).build()
         ).setActionRow(
                 Button.success("privYes", "Yes"),
                 Button.danger("privNo", "No")
@@ -294,4 +321,88 @@ public class ProjectFunctions {
         updateProjects(this.project, this.fileName);
         sendProjectEmbed(event, false);
     }
+
+    // =====================
+    //       Tasks:
+    // =====================
+
+    public void newTask(ButtonInteractionEvent event) {
+        event.editMessageEmbeds(
+                new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                        .addField(
+                                "New task",
+                                "Select an option below to set it.\nName is required.",
+                                false
+                        ).setColor(Color.BLUE).build()
+        ).setActionRow(
+                Button.primary("taskName", "Set name"),
+                Button.primary("taskDescription", "Set description"),
+                Button.success("save", "Save"),
+                Button.danger("showProject", "Back")
+        ).queue();
+    }
+
+    public void setTaskName(ButtonInteractionEvent event) {
+        event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                        .addField(
+                                "Waiting...",
+                                "The next thing that you send will become the tasks name",
+                                false
+                        ).setColor(Color.BLUE).build())
+                .setActionRow(
+                        Button.danger("cancelTaskEdit", "Back")
+                ).queue();
+        if (this.task == null)
+            this.task = new Task();
+        this.pc.getMakingTask().put(event.getUser().getIdLong(), new Object[]{true, this.task, this});
+    }
+
+    public void setTaskDescription(ButtonInteractionEvent event) {
+        event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                        .addField(
+                                "Waiting...",
+                                "Send the description as a message",
+                                false
+                        ).setColor(Color.BLUE).build())
+                .setActionRow(
+                        Button.danger("cancelTaskEdit", "Back")
+                ).queue();
+        if (this.task == null)
+            this.task = new Task();
+        this.pc.getMakingTask().put(event.getUser().getIdLong(), new Object[]{false, this.task, this});
+    }
+
+    public void save(ButtonInteractionEvent event) {
+        try {
+            String name = this.task.getName();
+            ProjectFunctions.updateProjects(this.project.addTask(this.task), fileName);
+            event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                    .addField(
+                            "Success",
+                            "Project " + this.project.getName() + " now has the task: " + name,
+                            false).setColor(Color.GREEN)
+                    .build()).setActionRow(Button.danger("showProject", "Back to project")).queue();
+        } catch (NullPointerException e) {
+            event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                    .addField(
+                            "ERROR",
+                            "a name is required! press back and assign a name to this task",
+                            false).setColor(Color.RED)
+                    .build()).setActionRow(Button.danger("newTask", "Back")).queue();
+        }
+    }
+
+    public void cancelTaskEdit(ButtonInteractionEvent event) {
+        this.pc.getMakingTask().remove(event.getUser().getIdLong());
+        newTask(event);
+    }
+
+    public void progress(ButtonInteractionEvent event) {
+
+        //event.getMessage().getEmbeds().get(0).getFields().get(1).get
+    }
+
+    public void regress(ButtonInteractionEvent event) {
+    }
+
 }

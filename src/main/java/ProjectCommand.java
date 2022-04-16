@@ -1,14 +1,14 @@
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.SelectMenuInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
-import java.awt.*;
-import java.time.format.DateTimeFormatter;
+import java.awt.Color;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -17,7 +17,10 @@ public class ProjectCommand extends ListenerAdapter {
 
     //                   <{embed title, sender ID}, project>
     private final HashMap<Key, ProjectFunctions> hashMap = new HashMap<>();
+    //                   <userid, {bool, project}>
     private final HashMap<Long, Object[]> editingOwner = new HashMap<>();
+    //                   <userid, {bool, task}>
+    private final HashMap<Long, Object[]> makingTask = new HashMap<>();
     private final Utils utils;
 
     public ProjectCommand(Utils utils) {
@@ -26,6 +29,10 @@ public class ProjectCommand extends ListenerAdapter {
 
     public HashMap<Long, Object[]> getEditingOwner() {
         return editingOwner;
+    }
+
+    public HashMap<Long, Object[]> getMakingTask() {
+        return makingTask;
     }
 
     @Override
@@ -56,6 +63,20 @@ public class ProjectCommand extends ListenerAdapter {
                 ProjectFunctions.updateProjects(p, fileName);
                 this.editingOwner.remove(event.getAuthor().getIdLong());
                 Utils.successEmbed(event.getMessage(), "Project details have been updated");
+            }
+
+            if (this.makingTask.get(event.getAuthor().getIdLong()) != null) {
+                ProjectFunctions p = (ProjectFunctions) this.makingTask.get(event.getAuthor().getIdLong())[2];
+                Task t = (Task) this.makingTask.get(event.getAuthor().getIdLong())[1];
+                if ((boolean) this.makingTask.get(event.getAuthor().getIdLong())[0]) {
+                    t.setName(message);
+                } else {
+                    t.setDescription(message);
+                }
+
+                p.setTask(t);
+                this.makingTask.remove(event.getAuthor().getIdLong());
+                Utils.successEmbed(event.getMessage(), "Task details have been updated. Press save to finish.");
             }
 
             if (Objects.equals(args[0], "*new") || Objects.equals(args[0], "*list")) return;
@@ -123,8 +144,66 @@ public class ProjectCommand extends ListenerAdapter {
                 case "editPrivate" -> pf.editPrivate(event);
                 case "privYes" -> pf.privateYes(event);
                 case "privNo" -> pf.privateNo(event);
-                //case "newTask" -> pf.newTask(event);
+                //tasks
+                case "newTask" -> pf.newTask(event);
+                case "save" -> pf.save(event);
+                case "taskName" -> pf.setTaskName(event);
+                case "taskDescription" -> pf.setTaskDescription(event);
+                case "cancelTaskEdit" -> pf.cancelTaskEdit(event);
+                case "progress" -> pf.progress(event);
+                case "regress" -> pf.regress(event);
             }
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+            event.reply("Sorry, that ones not yours!").setEphemeral(true).queue();
+        } catch (Exception e) {
+            utils.exceptionEmbed(event.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void onSelectMenuInteraction(@Nonnull SelectMenuInteractionEvent event) {
+        try {
+            Key key = new Key(
+                    Objects.requireNonNull(event.getMessage().getEmbeds().get(0).getFooter()).getText(),
+                    event.getUser().getIdLong()
+            );
+            ProjectFunctions pf = this.hashMap.get(key);
+            //event.editMessage(event.getInteraction().getSelectedOptions().get(0).getLabel()).queue();
+            boolean exists = false;
+            Task task = null;
+            for (Task t : pf.getProject().getTasks()) {
+                if (t.getName().equals(event.getInteraction().getSelectedOptions().get(0).getLabel())) {
+                    exists = true;
+                    task = t;
+                    break;
+                }
+            }
+            if (!exists) return;
+
+            int progress = Math.round(task.getProgress()/10f);
+
+            event.editMessageEmbeds(
+                    new EmbedBuilder().setFooter("card id: " + pf.getMessage().getIdLong())
+                            .setTitle("Task: " + task.getName())
+                            .addField("description", task.getDescription(), false)
+                            .addField(
+                                    "Progress: ",
+                                    ":green_square:".repeat(progress) + ":red_square:".repeat(10 - progress),
+                                    false
+                            )
+                            .setColor(Color.BLUE).build()
+            ).setActionRows(
+                    ActionRow.of(
+                            Button.success("progress", " "),
+                            Button.danger("regress", " "),
+                            Button.primary("editTask", "Edit"),
+                            Button.danger("deleteTask", "delete")
+                    ),
+                    event.getMessage().getActionRows().get(0),
+                    event.getMessage().getActionRows().get(1)
+            ).queue();
+
         } catch (NullPointerException e) {
             event.reply("Sorry, that ones not yours!").setEphemeral(true).queue();
         } catch (Exception e) {
