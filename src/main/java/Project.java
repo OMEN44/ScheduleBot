@@ -13,7 +13,7 @@ import java.util.Objects;
 @SuppressWarnings("unused")
 public class Project {
     //project stuff
-    private final String name;
+    private String name;
     private String description = "";
     private boolean hasCategory;
     private boolean isPrivate;
@@ -22,6 +22,8 @@ public class Project {
     private long role;
     private List<Long> users = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
+
+    public Project() {}
 
     public Project(String name) {
         this.name = name;

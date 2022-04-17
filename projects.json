@@ -43,7 +43,12 @@
       {
         "name": "new home embed",
         "description": "When the bot is mentioned it will send an embed that gives users create and list options",
-        "progress": 10
+        "progress": 100
+      },
+      {
+        "name": "Timer",
+        "description": "Add a timer so that buttons disable after 30 seconds",
+        "progress": 0
       }
     ]
   }

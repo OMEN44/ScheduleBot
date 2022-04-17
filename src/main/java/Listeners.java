@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.interactions.components.selections.SelectMenu;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
-import java.awt.Color;
+import java.awt.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -50,6 +50,7 @@ public class Listeners extends ListenerAdapter {
             List<Project> projects = Project.getProjects("projects.json");
             Project project = null;
 
+            //edit project button listener
             if (this.editingOwner.get(event.getAuthor().getIdLong()) != null) {
                 Project p = (Project) this.editingOwner.get(event.getAuthor().getIdLong())[1];
                 if ((boolean) this.editingOwner.get(event.getAuthor().getIdLong())[0]) {
@@ -71,6 +72,7 @@ public class Listeners extends ListenerAdapter {
                 Utils.successEmbed(event.getMessage(), "Project details have been updated");
             }
 
+            //create task button listener
             if (this.makingTask.get(event.getAuthor().getIdLong()) != null) {
                 Logic l = (Logic) this.makingTask.get(event.getAuthor().getIdLong())[2];
                 Task t = (Task) this.makingTask.get(event.getAuthor().getIdLong())[1];
@@ -93,12 +95,29 @@ public class Listeners extends ListenerAdapter {
                 Utils.successEmbed(event.getMessage(), "Task details have been updated. Press save to finish.");
             }
 
+            //create project button listener
             if (this.makingProject.get(event.getAuthor().getIdLong()) != null) {
-
+                Project proj = new Project(args[0], event.getAuthor().getIdLong());
+                Logic.updateProjects(proj);
+                this.makingProject.remove(event.getAuthor().getIdLong());
+                Utils.successEmbed(event.getMessage(), "Project details have been updated");
             }
 
             if (event.getMessage().getMentionedUsers().size() == 1 && !event.getAuthor().isBot()) {
                 if (event.getMessage().getMentionedUsers().get(0).getIdLong() == 960287864430682112L) {
+
+                    Logic logic = new Logic(
+                            null,
+                            this.utils,
+                            event.getMessage(),
+                            this
+                    );
+                    Key key = new Key("card id: " + event.getMessage().getIdLong(), event.getAuthor().getIdLong());
+                    this.hashMap.put(
+                            key,
+                            logic
+                    );
+
                     SelectMenu.Builder sm = SelectMenu.create("projectMenu").setRequiredRange(1, 1).setPlaceholder("project");
                     for (Project p : projects)
                         sm.addOption(p.getName(), p.getName());
@@ -169,28 +188,7 @@ public class Listeners extends ListenerAdapter {
             Logic logic = this.hashMap.get(key);
 
             switch (Objects.requireNonNull(event.getButton().getId())) {
-                case "home" -> {
-                    SelectMenu.Builder sm = SelectMenu.create("projectMenu").setRequiredRange(1, 1).setPlaceholder("project");
-                    for (Project p : Project.getProjects("projects.json"))
-                        sm.addOption(p.getName(), p.getName());
-                    event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + event.getMessage().getIdLong())
-                            .setTitle("Larry the project bot")
-                            .setColor(Color.BLUE)
-                            .addField(
-                                    "What I am:",
-                                    "I am a bot created by ΩMЄN44! I am based of the website Trello and " +
-                                            "am here to help with organising projects! I am button based and " +
-                                            "not text based so enjoy!",
-                                    false)
-                            .build()
-                    ).setActionRows(
-                            ActionRow.of(sm.build()),
-                            ActionRow.of(
-                                    Button.primary("createProject", "New project"),
-                                    Button.primary("help", "Help")
-                            )
-                    ).queue();
-                }
+                case "home" -> logic.home(event);
                 case "help" -> logic.helpEmbed(event);
                 case "showProject" -> logic.sendProjectEmbed(event, false);
                 case "join" -> logic.joinProject(event);
@@ -208,6 +206,10 @@ public class Listeners extends ListenerAdapter {
                 case "privYes" -> logic.privateYes(event);
                 case "privNo" -> logic.privateNo(event);
                 case "createProject" -> logic.createProject(event);
+                case "exitNewProject" -> {
+                    this.makingProject.remove(event.getUser().getIdLong());
+                    logic.home(event);
+                }
                 //tasks
                 case "tasks" -> logic.showTasks(event);
                 case "newTask" -> logic.newTask(event);
@@ -258,14 +260,14 @@ public class Listeners extends ListenerAdapter {
                     }
                 }
 
-                Logic logic = new Logic(
-                        project,
-                        this.utils,
-                        event.getMessage(),
-                        this
+                Key key = new Key(
+                        Objects.requireNonNull(event.getMessage().getEmbeds().get(0).getFooter()).getText(),
+                        event.getUser().getIdLong()
                 );
+                Logic logic = this.hashMap.get(key);
+                logic.setProject(project);
                 logic.sendProjectEmbed(event, false);
-                Key key = new Key("card id: " + event.getMessage().getIdLong(), event.getUser().getIdLong());
+                this.hashMap.remove(key);
                 this.hashMap.put(
                         key,
                         logic
@@ -273,6 +275,7 @@ public class Listeners extends ListenerAdapter {
             }
 
         } catch (NullPointerException e) {
+            e.printStackTrace();
             event.reply("Sorry, that ones not yours!").setEphemeral(true).queue();
         } catch (Exception e) {
             utils.exceptionEmbed(event.getMessage(), e);

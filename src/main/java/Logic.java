@@ -2,7 +2,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.GenericComponentInteractionCreateEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -32,6 +31,10 @@ public class Logic {
         this.utils = utils;
         this.message = message;
         this.listeners = projectCommand;
+    }
+
+    public void setProject(Project project) {
+        this.project = project;
     }
 
     public Project getProject() {
@@ -134,18 +137,7 @@ public class Logic {
                 Writer newWriter = Files.newBufferedWriter(Paths.get("projects.json"));
                 gson.toJson(projects, newWriter);
                 newWriter.close();
-                event.editMessageEmbeds(
-                        new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
-                                .addField(
-                                        "SUCCESS!",
-                                        "`" + this.project.getName() + "` was deleted",
-                                        false
-                                )
-                                .setColor(Color.GREEN).build()
-                ).setActionRow(
-                        event.getButton().asDisabled(),
-                        Button.danger("delNo", "No").asDisabled()
-                ).queue();
+                home(event);
                 this.project = null;
             } else event.reply("You do not have permission to do this!").setEphemeral(true).queue();
         } catch (IOException e) {
@@ -509,6 +501,39 @@ public class Logic {
         ).setActionRow(Button.danger("showProject", "Back")).queue();
     }
 
+    public void helpEmbed(ButtonInteractionEvent event) {
+        event.editMessageEmbeds(
+                new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                        .setTitle("Help Page")
+                        .setColor(Color.BLUE)
+                        .addField("title", "placeholder", false)
+                        .build()
+        ).setActionRow(Button.danger("home", "Back")).queue();
+    }
+
+    public void home(ButtonInteractionEvent event) {
+        SelectMenu.Builder sm = SelectMenu.create("projectMenu").setRequiredRange(1, 1).setPlaceholder("project");
+        for (Project p : Project.getProjects("projects.json"))
+            sm.addOption(p.getName(), p.getName());
+        event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                .setTitle("Larry the project bot")
+                .setColor(Color.BLUE)
+                .addField(
+                        "What I am:",
+                        "I am a bot created by ΩMЄN44! I am based of the website Trello and " +
+                                "am here to help with organising projects! I am button based and " +
+                                "not text based so enjoy!",
+                        false)
+                .build()
+        ).setActionRows(
+                ActionRow.of(sm.build()),
+                ActionRow.of(
+                        Button.primary("createProject", "New project"),
+                        Button.primary("help", "Help")
+                )
+        ).queue();
+    }
+
     public void createProject(ButtonInteractionEvent event) {
         event.editMessageEmbeds(
                 new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
@@ -518,16 +543,9 @@ public class Logic {
                                 "Send the name of your new project. It can only be 1 word.",
                                 false
                         ).build()
-        ).setActionRow(Button.danger("home", "Back")).queue();
-    }
-
-    public void helpEmbed(ButtonInteractionEvent event) {
-        event.editMessageEmbeds(
-                new EmbedBuilder().setFooter("card id: " + event.getMessage().getIdLong())
-                        .setTitle("Help Page")
-                        .setColor(Color.BLUE)
-                        .addField("title", "placeholder", false)
-                        .build()
-        ).setActionRow(Button.danger("home", "Back")).queue();
+        ).setActionRow(Button.danger("exitNewProject", "Back")).queue();
+        if (this.project == null)
+            this.project = new Project();
+        this.listeners.getMakingProject().put(event.getUser().getIdLong(), this.project);
     }
 }
