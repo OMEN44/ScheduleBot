@@ -15,10 +15,7 @@ public class Main {
                 .setStatus(OnlineStatus.IDLE)
                 .enableIntents(GatewayIntent.GUILD_MEMBERS)
                 .addEventListeners(
-                        new BasicCommands(),
-                        new CreateCommand(utils),
-                        new ProjectCommand(utils),
-                        new Config(),
+                        new Listeners(utils),
                         utils
                 )
                 .build().awaitReady();

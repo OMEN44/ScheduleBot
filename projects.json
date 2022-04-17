@@ -1,22 +1,49 @@
 [
   {
-    "name": "project_bot",
-    "description": "",
+    "name": "homework",
+    "description": "Huon\u0027s homework needs to be done",
     "hasCategory": false,
     "isPrivate": false,
-    "owner": 961398561910689843,
+    "owner": 577382380763873280,
+    "role": 0,
+    "users": [
+      961398561910689843
+    ],
+    "tasks": [
+      {
+        "name": "math",
+        "description": "Hello I am math numbers and stuff",
+        "progress": 0
+      },
+      {
+        "name": "sport",
+        "description": "shoot ball hoop",
+        "progress": 0
+      },
+      {
+        "name": "lunch",
+        "description": "do what u want!!!",
+        "progress": 0
+      },
+      {
+        "name": "Art",
+        "progress": 0
+      }
+    ]
+  },
+  {
+    "name": "project_bot",
+    "description": "Literally this bot lol",
+    "hasCategory": false,
+    "isPrivate": true,
+    "owner": 577382380763873280,
     "role": 0,
     "users": [],
     "tasks": [
       {
         "name": "new home embed",
         "description": "When the bot is mentioned it will send an embed that gives users create and list options",
-        "progress": 0
-      },
-      {
-        "name": "bug with descriptions",
-        "description": "anaosdnoansd",
-        "progress": 100
+        "progress": 10
       }
     ]
   }

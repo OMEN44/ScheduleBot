@@ -2,6 +2,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.GenericComponentInteractionCreateEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -10,7 +11,7 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.selections.SelectMenu;
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.Color;
+import java.awt.*;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -18,19 +19,19 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 
-public class ProjectFunctions {
+public class Logic {
 
     private final Utils utils;
     private final Message message;
-    private final ProjectCommand pc;
+    private final Listeners listeners;
     private Project project;
     private Task task;
 
-    public ProjectFunctions(Project project, Utils utils, Message message, ProjectCommand projectCommand) {
+    public Logic(Project project, Utils utils, Message message, Listeners projectCommand) {
         this.project = project;
         this.utils = utils;
         this.message = message;
-        this.pc = projectCommand;
+        this.listeners = projectCommand;
     }
 
     public Project getProject() {
@@ -79,6 +80,7 @@ public class ProjectFunctions {
     }
 
     public void showTasks(ButtonInteractionEvent event) {
+        this.task = null;
         List<Task> tasks = this.project.getTasks();
         if (tasks.isEmpty())
             event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
@@ -93,8 +95,9 @@ public class ProjectFunctions {
             if (this.project.getUsers().contains(event.getUser().getIdLong()) ||
                     this.project.getOwner() == event.getUser().getIdLong())
                 create = Button.primary("newTask", "Create task");
-            SelectMenu.Builder menu = SelectMenu.create("taskSelector").setPlaceholder("task").setRequiredRange(1, 1);
-            for (Task t : this.project.getTasks())
+
+            SelectMenu.Builder menu = SelectMenu.create("taskMenu").setPlaceholder("task").setRequiredRange(1, 1);
+            for (Task t : tasks)
                 menu.addOption(t.getName(), t.getName(), t.getDescription());
             event.editMessageEmbeds(
                     new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
@@ -150,11 +153,13 @@ public class ProjectFunctions {
         }
     }
 
-    public void sendProjectEmbed(@NotNull ButtonInteractionEvent event, boolean ended) {
+    public void sendProjectEmbed(@NotNull GenericComponentInteractionCreateEvent event, boolean ended) {
         Button tasks = Button.primary("tasks", "View tasks");
         Button edit = Button.primary("edit", "Edit project");
         Button join = Button.primary("join", "Join project");
+        Button leave = Button.primary("leave", "Leave project");
         Button delete = Button.danger("delete", "Delete project");
+        Button home = Button.danger("home", "Back");
         if (event.getUser().getIdLong() != this.project.getOwner()) {
             edit = edit.asDisabled();
             delete = delete.asDisabled();
@@ -165,11 +170,12 @@ public class ProjectFunctions {
             join = join.asDisabled();
             delete = delete.asDisabled();
         }
-        if (this.project.getUsers().contains(event.getUser().getIdLong()) ||
-                this.project.isPrivate() || this.project.getOwner() == event.getUser().getIdLong())
+        if (this.project.getUsers().contains(event.getUser().getIdLong()))
+            join = leave;
+        if (this.project.isPrivate() || this.project.getOwner() == event.getUser().getIdLong())
             join = join.asDisabled();
         event.editMessageEmbeds(createProjectEmbed().build())
-                .setActionRow(tasks, edit, join, delete).queue();
+                .setActionRow(tasks, edit, join, home, delete).queue();
     }
 
     public void sendProjectEmbed(@NotNull MessageReceivedEvent event, boolean ended) {
@@ -178,6 +184,7 @@ public class ProjectFunctions {
         Button join = Button.primary("join", "Join project");
         Button leave = Button.primary("leave", "Leave project");
         Button delete = Button.danger("delete", "Delete project");
+        Button home = Button.danger("home", "Back");
         if (event.getAuthor().getIdLong() != this.project.getOwner()) {
             edit = edit.asDisabled();
             delete = delete.asDisabled();
@@ -193,7 +200,7 @@ public class ProjectFunctions {
         if (this.project.isPrivate() || this.project.getOwner() == event.getAuthor().getIdLong())
             join = join.asDisabled();
         event.getMessage().replyEmbeds(createProjectEmbed().build())
-                .setActionRow(tasks, edit, join, delete).queue();
+                .setActionRow(tasks, edit, join, home, delete).queue();
     }
 
     public EmbedBuilder createProjectEmbed() {
@@ -278,7 +285,7 @@ public class ProjectFunctions {
                     Button.primary("editDescription", "Description"),
                     Button.primary("editPrivate", "Private"),
                     Button.primary("editOwner", "Ownership"),
-                    Button.danger("showProject", "Cancel")
+                    Button.danger("showProject", "Back")
             ).queue();
         } else event.reply("Only the owner can edit a project!").setEphemeral(true).queue();
     }
@@ -291,9 +298,9 @@ public class ProjectFunctions {
                                 false
                         ).setColor(Color.BLUE).build())
                 .setActionRow(
-                        Button.danger("cancelEdit", "Cancel")
+                        Button.danger("cancelEdit", "Back")
                 ).queue();
-        this.pc.getEditingOwner().put(event.getUser().getIdLong(), new Object[]{false, this.project});
+        this.listeners.getEditingOwner().put(event.getUser().getIdLong(), new Object[]{false, this.project});
     }
 
     public void editOwner(@NotNull ButtonInteractionEvent event) {
@@ -304,9 +311,9 @@ public class ProjectFunctions {
                                 false
                         ).setColor(Color.BLUE).build())
                 .setActionRow(
-                        Button.danger("cancelEdit", "Cancel")
+                        Button.danger("cancelEdit", "Back")
                 ).queue();
-        this.pc.getEditingOwner().put(event.getUser().getIdLong(), new Object[]{true, this.project});
+        this.listeners.getEditingOwner().put(event.getUser().getIdLong(), new Object[]{true, this.project});
     }
 
     public void editPrivate(@NotNull ButtonInteractionEvent event) {
@@ -352,7 +359,7 @@ public class ProjectFunctions {
                 Button.primary("taskName", "Set name"),
                 Button.primary("taskDescription", "Set description"),
                 Button.success("save", "Save"),
-                Button.danger("showProject", "Back")
+                Button.danger("tasks", "Back")
         ).queue();
     }
 
@@ -368,7 +375,7 @@ public class ProjectFunctions {
                 ).queue();
         if (this.task == null)
             this.task = new Task();
-        this.pc.getMakingTask().put(event.getUser().getIdLong(), new Object[]{true, this.task, this});
+        this.listeners.getMakingTask().put(event.getUser().getIdLong(), new Object[]{true, this.task, this});
     }
 
     public void setTaskDescription(ButtonInteractionEvent event) {
@@ -383,13 +390,27 @@ public class ProjectFunctions {
                 ).queue();
         if (this.task == null)
             this.task = new Task();
-        this.pc.getMakingTask().put(event.getUser().getIdLong(), new Object[]{false, this.task, this});
+        this.listeners.getMakingTask().put(event.getUser().getIdLong(), new Object[]{false, this.task, this});
     }
 
-    public void save(ButtonInteractionEvent event) {
+    public void save(ButtonInteractionEvent event, boolean editing) {
         try {
             String name = this.task.getName();
-            ProjectFunctions.updateProjects(this.project.addTask(this.task));
+            if (editing) {
+                for (Task t : this.project.getTasks()) {
+                    if (Objects.equals(name, t.getName())) {
+                        event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                                .addField(
+                                        "ERROR",
+                                        "A task with this name already exists!",
+                                        false).setColor(Color.RED)
+                                .build()).setActionRow(Button.danger("newTask", "Back")).queue();
+                        return;
+                    }
+                }
+                Logic.updateProjects(this.project.addTask(this.task));
+            } else
+                Logic.updateProjects(this.project, this.task);
             event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
                     .addField(
                             "Success",
@@ -407,7 +428,7 @@ public class ProjectFunctions {
     }
 
     public void cancelTaskEdit(ButtonInteractionEvent event) {
-        this.pc.getMakingTask().remove(event.getUser().getIdLong());
+        this.listeners.getMakingTask().remove(event.getUser().getIdLong());
         newTask(event);
     }
 
@@ -454,5 +475,59 @@ public class ProjectFunctions {
             event.editMessageEmbeds(eb.build()).setActionRow(
                     Button.primary("tasks", "View tasks")
             ).queue();
+    }
+
+    public void editTask(ButtonInteractionEvent event) {
+        event.editMessageEmbeds(
+                new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                        .addField(
+                                "Edit task",
+                                "Select an option below to edit.",
+                                false
+                        ).setColor(Color.BLUE).build()
+        ).setActionRow(
+                Button.primary("taskName", "Set name"),
+                Button.primary("taskDescription", "Set description"),
+                Button.success("saveEdit", "Save"),
+                Button.danger("tasks", "Back")
+        ).queue();
+    }
+
+    public void deleteTask(ButtonInteractionEvent event) {
+        List<Task> tasks = this.project.getTasks();
+        tasks.removeIf(t -> Objects.equals(t.getName(), this.task.getName()));
+        this.project.setTasks(tasks);
+        updateProjects(this.project);
+        event.editMessageEmbeds(
+                new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                        .setColor(Color.GREEN)
+                        .addField(
+                                "Success",
+                                "task " + this.task.getName() + "was successfully deleted",
+                                false)
+                        .build()
+        ).setActionRow(Button.danger("showProject", "Back")).queue();
+    }
+
+    public void createProject(ButtonInteractionEvent event) {
+        event.editMessageEmbeds(
+                new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
+                        .setColor(Color.BLUE)
+                        .addField(
+                                "New Project",
+                                "Send the name of your new project. It can only be 1 word.",
+                                false
+                        ).build()
+        ).setActionRow(Button.danger("home", "Back")).queue();
+    }
+
+    public void helpEmbed(ButtonInteractionEvent event) {
+        event.editMessageEmbeds(
+                new EmbedBuilder().setFooter("card id: " + event.getMessage().getIdLong())
+                        .setTitle("Help Page")
+                        .setColor(Color.BLUE)
+                        .addField("title", "placeholder", false)
+                        .build()
+        ).setActionRow(Button.danger("home", "Back")).queue();
     }
 }

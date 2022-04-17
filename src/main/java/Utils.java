@@ -1,11 +1,14 @@
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import java.awt.*;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -75,5 +78,15 @@ public class Utils extends ListenerAdapter {
                 event.editButton(Button.secondary("prntStack", "Print in terminal").asDisabled()).queue();
             }
         }
+    }
+
+    @Override
+    public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        if (event.getAuthor().isBot()) return;
+        if (event.getMessage().getContentRaw().equalsIgnoreCase("*ping"))
+            event.getMessage().reply("Ping: very fast :smirk:").queue(message -> {
+                long ping = event.getMessage().getTimeCreated().until(message.getTimeCreated(), ChronoUnit.MILLIS);
+                message.editMessage("ping: " + ping).queue();
+            });
     }
 }

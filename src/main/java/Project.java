@@ -97,8 +97,8 @@ public class Project {
         this.users.addAll(Arrays.asList(users));
     }
 
-    public void setTasks(Task... tasks) {
-        this.tasks = Arrays.stream(tasks).toList();
+    public void setTasks(List<Task> tasks) {
+        this.tasks = tasks;
     }
 
     public static List<Project> getProjects(String path) {
