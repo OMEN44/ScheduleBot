@@ -224,7 +224,7 @@ public class Listeners extends ListenerAdapter {
                 case "regress" -> logic.regress(event);
             }
         } catch (NullPointerException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             event.reply("Sorry, you dont have permission to use that!").setEphemeral(true).queue();
         } catch (Exception e) {
             utils.exceptionEmbed(event.getMessage(), e);
@@ -275,7 +275,7 @@ public class Listeners extends ListenerAdapter {
             }
 
         } catch (NullPointerException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             event.reply("Sorry, that ones not yours!").setEphemeral(true).queue();
         } catch (Exception e) {
             utils.exceptionEmbed(event.getMessage(), e);

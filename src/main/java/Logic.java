@@ -85,13 +85,17 @@ public class Logic {
     public void showTasks(ButtonInteractionEvent event) {
         this.task = null;
         List<Task> tasks = this.project.getTasks();
+        Button createTask = Button.primary("newTask", "Create task");
+        if (!this.project.getUsers().contains(event.getUser().getIdLong()) ||
+                event.getUser().getIdLong() != this.project.getOwner())
+            createTask = createTask.asDisabled();
         if (tasks.isEmpty())
             event.editMessageEmbeds(new EmbedBuilder().setFooter("card id: " + this.message.getIdLong())
                             .addField("Oh no!",
                                     "No tasks were found!", false).setColor(Color.RED).build())
                     .setActionRow(
                             Button.primary("showProject", "View project"),
-                            Button.primary("newTask", "Create task")
+                            createTask
                     ).queue();
         else {
             Button create = Button.primary("newTask", "Create task").asDisabled();
